@@ -1,0 +1,23 @@
+# Core
+pandas>=2.1
+numpy>=1.26
+openpyxl>=3.1
+
+# ML
+scikit-learn>=1.4
+
+# API
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.6
+
+# Dashboard
+streamlit>=1.32
+plotly>=5.19
+
+# Database
+psycopg2-binary>=2.9
+sqlalchemy>=2.0
+
+# Utilities
+python-dotenv>=1.0

@@ -1,0 +1,19 @@
+# Virtual environment - never push this
+.venv/
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VS Code settings
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Sensitive data (add if needed)
+*.env

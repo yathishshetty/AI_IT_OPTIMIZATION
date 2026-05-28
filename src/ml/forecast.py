@@ -35,8 +35,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MODELS_DIR = PROJECT_ROOT / "models"
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
-FEATURE_COLS = ["days_since_start", "day_of_week", "day_of_month",
-                "month", "is_weekend"]
+# Note: we intentionally omit `days_since_start`. With realistic noisy data
+# the linear model would fit a spurious slope from training noise and let
+# the prediction drift further off as the test window progresses.
+FEATURE_COLS = ["day_of_week", "day_of_month", "month", "is_weekend"]
 
 
 def _build_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -70,6 +72,14 @@ def train_forecast_model(df: pd.DataFrame) -> dict:
     split_idx = int(len(daily) * 0.8)
     X_train, X_test = X.iloc[:split_idx], X.iloc[split_idx:]
     y_train, y_test = y.iloc[:split_idx], y.iloc[split_idx:]
+
+    # Winsorize the training target: clip the top 5% of cost days to the 95th
+    # percentile. The forecaster is meant to predict the baseline; anomaly
+    # spikes are the anomaly detector's job. Without this, a handful of
+    # spike days in training pull the regression line up and the model
+    # extrapolates that bias into the test set.
+    cap = y_train.quantile(0.95)
+    y_train = y_train.clip(upper=cap)
 
     model = LinearRegression()
     model.fit(X_train, y_train)

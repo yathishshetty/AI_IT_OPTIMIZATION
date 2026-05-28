@@ -54,9 +54,19 @@ LICENSE_FEATURE_COLS = [
 
 def _create_labels(df: pd.DataFrame) -> pd.Series:
     """
-    Weak-supervision labeling: use domain rules to bootstrap labels.
-    1 = should revoke, 0 = keep.
+    Labels = ground truth.
+
+    Preferred source is the `truly_unused` column, which the data generator
+    produces as a delayed signal of whether the license is actually needed.
+    It is NOT a deterministic function of the features the model trains on,
+    so the classifier has to learn a noisy probabilistic relationship
+    instead of memorizing a rule.
+
+    Falls back to the old weak-supervision rule if `truly_unused` is missing
+    (legacy datasets), so this code stays backward-compatible.
     """
+    if "truly_unused" in df.columns:
+        return df["truly_unused"].astype(int)
     return (
         (df["logins_last_30d"] == 0) |
         ((df["active_days_last_30d"] <= 1) & (df["days_since_last_login"] > 30))
@@ -113,7 +123,7 @@ def train_license_classifier(df: pd.DataFrame) -> dict:
 
     # Bonus: log feature importance (= coefficient sign + magnitude)
     coefs = dict(zip(LICENSE_FEATURE_COLS, model.coef_[0].round(3)))
-    log.info(f"Model coefficients (positive ⇒ pushes toward revoke): {coefs}")
+    log.info(f"Model coefficients (positive => pushes toward revoke): {coefs}")
 
     return metrics
 

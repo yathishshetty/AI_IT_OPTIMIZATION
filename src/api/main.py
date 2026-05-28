@@ -17,6 +17,7 @@ Why uvicorn?
 - In production you'd run: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --workers 4
 """
 from __future__ import annotations
+from contextlib import asynccontextmanager
 from pathlib import Path
 from datetime import datetime
 from fastapi import FastAPI
@@ -30,11 +31,19 @@ log = get_logger("api")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    log.info("FinOps API starting up")
+    yield
+    log.info("FinOps API shutting down")
+
+
 app = FastAPI(
     title="AI FinOps Platform API",
     description="Cost forecasting, anomaly detection, and savings recommendations "
                 "for cloud + SaaS spend.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # CORS — let the Streamlit dashboard (different port) call us in dev.
@@ -88,11 +97,3 @@ def health():
     return HealthResponse(status=overall, models_loaded=models, data_freshness=freshness)
 
 
-@app.on_event("startup")
-def _startup_log():
-    log.info("FinOps API starting up")
-
-
-@app.on_event("shutdown")
-def _shutdown_log():
-    log.info("FinOps API shutting down")    
